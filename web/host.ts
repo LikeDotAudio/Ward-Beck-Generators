@@ -16,6 +16,8 @@ export interface GeneratorEngine {
   toneCalDb: number;
   sweepTimer: any;
   onStatusChange: ((status: any) => void) | null;
+  /** A live MXL flow feed; a generator replaces it (they cannot mix). */
+  mxlFeed?: { stop(): void } | null;
   setupAudioGraph(sourceObj: any, isDirectNode?: boolean): void;
   stopCurrentSource(): void;
 }
