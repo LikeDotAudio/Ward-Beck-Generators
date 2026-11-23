@@ -1,0 +1,9 @@
+[package]
+name = "wbs-generators"
+version = "1.0.0"
+edition = "2021"
+description = "Ward-Beck Systems generators: POD-33 tones, ABP-1 walking 1s, pink noise, sweep, test-signal grains"
+license-file = "../LICENSE"
+publish = false
+
+[dependencies]

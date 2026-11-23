@@ -1,0 +1,19 @@
+{
+  "name": "@wardbeck/generators",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ward-Beck Systems generators: POD-33 tones, ABB-1 Bit Buddy / ABP-1 Bit Spitter, test signals (browser + Rust).",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "web/index.ts",
+  "exports": {
+    ".": "./web/index.ts",
+    "./generators-bitset.css": "./web/generators-bitset.css"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}
