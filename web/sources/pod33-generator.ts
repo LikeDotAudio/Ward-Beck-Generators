@@ -101,6 +101,8 @@ export function startPod33Generator(engine: GeneratorEngine, config: Pod33Config
 
   // Stop previous POD-33 node if running without disrupting Bit Buddy
   stopPod33Generator(engine, false);
+  // A generator replaces an MXL flow feed (it cannot mix with it)
+  if (engine.mxlFeed) { engine.mxlFeed.stop(); engine.mxlFeed = null; }
 
   engine.sourceType = 'test';
   engine.testType = `pod33_${config.freq}_${config.levelDb}_${config.channelMode}`;
@@ -187,6 +189,7 @@ export function startBitBuddyGenerator(engine: GeneratorEngine, config: BitBuddy
 
   // Stop previous Bit Buddy node if running without disrupting POD-33
   stopBitBuddyGenerator(engine, false);
+  if (engine.mxlFeed) { engine.mxlFeed.stop(); engine.mxlFeed = null; }
 
   engine.sourceType = 'test';
   engine.testType = `bitbuddy_${config.pattern}`;

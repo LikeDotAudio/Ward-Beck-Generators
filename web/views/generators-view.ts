@@ -2,7 +2,7 @@
 /**
  * Generators view (footer tab "generators").
  * POD-33 AES DARS & precision tone generator, the CBC / Radio-Canada MXL
- * test pattern studio, and the ABS-1 Audio Bit Spitter feeding an ABB-1
+ * test pattern studio (shown in the host's MXL tab when a cbcHost is given), and the ABS-1 Audio Bit Spitter feeding an ABB-1
  * Audio Bit Buddy (see bit-set-panel.ts).
  *
  * POD-33 and ABS-1 state lives in the Web Router (its CH 3 / CH 4 inputs
@@ -39,12 +39,21 @@ export class GeneratorsView {
   private cbcTimer = 0;
   private cbcBusy = false;
 
-  constructor(private container: HTMLElement, private router: GeneratorRouter) {
+  /** Where the CBC panel lives: the host's MXL tab when given, else this view. */
+  private cbcRoot: HTMLElement;
+
+  constructor(private container: HTMLElement, private router: GeneratorRouter, private cbcHost?: HTMLElement | null) {
     this.bitSet = new BitSetPanel(router);
+    this.cbcRoot = container;
   }
 
   build(): void {
     this.container.innerHTML = this.renderHtml();
+    const cbcPanel = this.container.querySelector('.rc-cbc-studio-panel');
+    if (this.cbcHost && cbcPanel) {
+      this.cbcHost.replaceChildren(cbcPanel);
+      this.cbcRoot = this.cbcHost;
+    }
     this.attachEvents();
     this.bitSet.bind(this.container);
     this.startCbcPolling();
@@ -57,16 +66,6 @@ export class GeneratorsView {
     const r = this.router;
     return `
       <div class="routing-console-rack">
-        <div class="routing-rack-header">
-          <div class="routing-header-left">
-            <div class="routing-wbs-badge">
-              <span class="wbs-mark">WBS</span>
-              <span class="wbs-rack-code">GENERATORS</span>
-            </div>
-            <div class="routing-header-title">WARD-BECK SYSTEMS // SIGNAL GENERATORS</div>
-          </div>
-        </div>
-
         <div class="routing-aux-panels">
         <!-- POD-33 REFERENCE TONE GENERATOR -->
         <div class="rc-pod-panel">
@@ -196,10 +195,10 @@ ${this.bitSet.html()}
   }
 
   private attachEvents(): void {
-    const root = this.container;
     const r = this.router;
+    const roots = this.cbcRoot === this.container ? [this.container] : [this.container, this.cbcRoot];
 
-    root.addEventListener('click', (e) => {
+    const onClick = (root: HTMLElement) => (e: Event) => {
       const t = (e.target as HTMLElement).closest('button');
       if (!t || !root.contains(t)) return;
       const d = t.dataset;
@@ -214,25 +213,26 @@ ${this.bitSet.html()}
       if (d.abbData !== undefined) return r.setBitBuddyConfig({ audioData: d.abbData as any });
       if (d.cbcLvl !== undefined) {
         const lvl = parseFloat(d.cbcLvl);
-        root.querySelectorAll('[data-cbc-lvl]').forEach((b) => b.classList.toggle('active', b === t));
+        this.cbcRoot.querySelectorAll('[data-cbc-lvl]').forEach((b) => b.classList.toggle('active', b === t));
         this.post('/api/cbc/audio_level', { level_db: lvl });
       }
-    });
+    };
+    roots.forEach((root) => root.addEventListener('click', onClick(root)));
 
     const onPattern = (target: 'video' | 'audio') => (e: Event) =>
       this.post('/api/cbc/pattern', { target, pattern: (e.target as HTMLSelectElement).value });
-    root.querySelector('#rcCbcVideoSelect')?.addEventListener('change', onPattern('video'));
-    root.querySelector('#rcCbcAudioSelect')?.addEventListener('change', onPattern('audio'));
+    this.cbcRoot.querySelector('#rcCbcVideoSelect')?.addEventListener('change', onPattern('video'));
+    this.cbcRoot.querySelector('#rcCbcAudioSelect')?.addEventListener('change', onPattern('audio'));
   }
 
   /* ---------------- CBC / Radio-Canada MXL test generators ---------------- */
 
-  /** Poll /api/cbc/status every 2.5 s while the routing tab is on screen. */
+  /** Poll /api/cbc/status every 2.5 s while the CBC panel is on screen. */
   private startCbcPolling(): void {
     window.clearInterval(this.cbcTimer);
     const tick = () => {
-      if (!this.container.isConnected) return window.clearInterval(this.cbcTimer);
-      if (this.container.offsetParent !== null) this.pollCbc();
+      if (!this.cbcRoot.isConnected) return window.clearInterval(this.cbcTimer);
+      if (this.cbcRoot.offsetParent !== null) this.pollCbc();
     };
     this.cbcTimer = window.setInterval(tick, 2500);
     tick();
@@ -262,7 +262,7 @@ ${this.bitSet.html()}
   }
 
   private paintCbc(): void {
-    const root = this.container, st = this.cbc;
+    const root = this.cbcRoot, st = this.cbc;
     const daemon = st.online !== undefined;
     CBC_SERVICES.forEach(([k, label, port]) => {
       const a = root.querySelector<HTMLAnchorElement>(`[data-cbc-svc="${k}"]`);
