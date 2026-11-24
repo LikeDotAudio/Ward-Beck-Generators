@@ -2,8 +2,8 @@
 /**
  * Generators view (footer tab "generators").
  * POD-33 AES DARS & precision tone generator, the CBC / Radio-Canada MXL
- * test pattern studio (shown in the host's MXL tab when a cbcHost is given), and the ABS-1 Audio Bit Spitter feeding an ABB-1
- * Audio Bit Buddy (see bit-set-panel.ts).
+ * test pattern studio (shown in the host's MXL tab when a cbcHost is given), and the ABS-1 Audio Bit Spitter
+ * (see bit-set-panel.ts).
  *
  * POD-33 and ABS-1 state lives in the Web Router (its CH 3 / CH 4 inputs
  * engage them), so these panels read and write it through the router.
@@ -195,9 +195,6 @@ ${this.bitSet.html()}
       if (d.podFreq !== undefined) return setOut({ freq: +d.podFreq });
       if (d.podLvl !== undefined) return setOut({ levelDb: +d.podLvl });
       if (d.podCh !== undefined) return setOut({ channelMode: d.podCh });
-      if (d.abbPat !== undefined) return r.setBitBuddyConfig({ pattern: d.abbPat as any });
-      if (d.abbPro !== undefined) return r.setBitBuddyConfig({ proMode: d.abbPro === 'pro' });
-      if (d.abbData !== undefined) return r.setBitBuddyConfig({ audioData: d.abbData as any });
       if (d.cbcLvl !== undefined) {
         const lvl = parseFloat(d.cbcLvl);
         this.cbcRoot.querySelectorAll('[data-cbc-lvl]').forEach((b) => b.classList.toggle('active', b === t));
