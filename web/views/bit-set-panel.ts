@@ -15,6 +15,10 @@
  */
 
 import type { GeneratorRouter } from '../host';
+import { setSpitterFile } from '../sources/pod33-generator';
+
+/** Longest file kept (seconds at 48 kHz). */
+const MAX_FILE_S = 120;
 
 type Opt = readonly [string, string, string?];
 interface Group { title: string; attr: string; opts: readonly Opt[] }
@@ -29,7 +33,8 @@ const PANEL: Group[] = [
 ];
 /** XTM extras: not on the real unit. */
 const EXTRAS: Group[] = [
-  { title: 'TEST PATTERN', attr: 'abb-pat', opts: [['tone', 'Tone'], ['walk1s', 'Walking 1s'], ['prbs', 'PRBS-15'], ['minmax', 'Min/Max']] },
+  { title: 'SOURCE', attr: 'abb-pat', opts: [['tone', 'Tone'], ['pink', 'Pink'], ['white', 'White'], ['brown', 'Brown'], ['walk1s', 'Walking 1s'], ['prbs', 'PRBS-15'], ['minmax', 'Min/Max'], ['file', 'WAV / MP3…', 'Loop an audio file (click again to load another)']] },
+  { title: 'LINE FAULT', attr: 'bs-fault', opts: [['clean', 'Clean'], ['noise', 'Noise', 'Hiss on the line and the odd bit error'], ['badeq', 'Bad EQ', 'Long cable, no equaliser: dull, and the eye closes now and then'], ['jitter', 'Jitter', 'A wandering clock'], ['drop', 'Dropouts', 'The receiver loses lock and mutes'], ['slip', 'Slips', 'Unlocked clocks: a frame repeated now and then'], ['biphase', 'Bi-phase', 'Coding errors: crackle bursts'], ['noclock', 'No clock', 'No clock on the line: silence']] },
   { title: 'CHANNEL STATUS', attr: 'abb-pro', opts: [['pro', 'Professional'], ['cons', 'Consumer']] },
   { title: 'DATA', attr: 'abb-data', opts: [['audio', 'Audio'], ['data', 'Non-audio']] },
 ];
@@ -43,6 +48,29 @@ const group = (g: Group) => `
 
 export class BitSetPanel {
   private boundTo?: HTMLElement;
+  private hasFile = false;
+  private loading = '';
+
+  /** Decode a WAV / MP3 at 48 kHz (the decoder resamples), keep it and play it. */
+  private async loadFile(f: File, root: HTMLElement): Promise<void> {
+    this.loading = `loading ${f.name}…`;
+    this.paint(root);
+    try {
+      const buf = await new OfflineAudioContext(2, 1, 48000).decodeAudioData(await f.arrayBuffer());
+      const n = Math.min(buf.length, MAX_FILE_S * 48000);
+      const l = buf.getChannelData(0).slice(0, n);
+      const r = (buf.numberOfChannels > 1 ? buf.getChannelData(1) : buf.getChannelData(0)).slice(0, n);
+      setSpitterFile({ l, r, rate: 48000 });
+      this.hasFile = true;
+      const name = f.name + (buf.length > n ? ` (first ${MAX_FILE_S} s)` : '');
+      this.loading = this.router.setBitBuddyFile
+        ? ((await this.router.setBitBuddyFile(name, l, r, 48000)) ? '' : 'the TAP did not take the file: playing it in the browser only')
+        : (this.router.setBitBuddyConfig({ pattern: 'file', fileName: name }), '');
+    } catch {
+      this.loading = `${f.name}: not an audio file this browser can decode`;
+    }
+    this.paint(root);
+  }
 
   constructor(private router: GeneratorRouter) {}
 
@@ -56,15 +84,24 @@ export class BitSetPanel {
         <div class="rc-bs-grid">${PANEL.map(group).join('')}</div>
         <div class="rc-bs-grid rc-bs-extras" title="XTM extras: not on the real unit">${EXTRAS.map(group).join('')}</div>
         <div class="rc-bs-status" id="bsStatus"></div>
+        <input type="file" id="bsFile" accept="audio/*,.wav,.mp3" hidden>
       </div>`;
   }
 
   bind(root: HTMLElement): void {
     if (this.boundTo === root) return;
     this.boundTo = root;
+    const input = root.querySelector<HTMLInputElement>('#bsFile');
+    input?.addEventListener('change', () => {
+      const f = input.files?.[0];
+      input.value = '';
+      if (f) void this.loadFile(f, root);
+    });
     root.addEventListener('click', (e) => {
       const t = (e.target as Element).closest('button');
       if (!t || !t.closest('.rc-bs-panel')) return;
+      // The file source: pick a file when none is loaded, or to change it
+      if (t.dataset.abbPat === 'file' && (!this.hasFile || this.router.bitBuddyConfig.pattern === 'file')) return input?.click();
       this.press(t);
       this.paint(root);
     });
@@ -83,6 +120,7 @@ export class BitSetPanel {
     if (d.bsChb === 'off') return r.setBitBuddyConfig(b.bOff ? { bOff: false } : { bOff: true, cycle: false, invert: false });
     if (d.bsValid !== undefined) return r.setBitBuddyConfig({ invalid: d.bsValid === 'invalid' });
     if (d.abbPat !== undefined) return r.setBitBuddyConfig({ pattern: d.abbPat as any });
+    if (d.bsFault !== undefined) return r.setBitBuddyConfig({ fault: d.bsFault as any });
     if (d.abbPro !== undefined) return r.setBitBuddyConfig({ proMode: d.abbPro === 'pro' });
     if (d.abbData !== undefined) return r.setBitBuddyConfig({ audioData: d.abbData as any });
   }
@@ -97,6 +135,7 @@ export class BitSetPanel {
     mark('bs-chb', (v) => (v === 'cycle' ? b.cycle : v === 'invert' ? b.invert : b.bOff));
     mark('bs-valid', (v) => (v === 'invalid') === b.invalid);
     mark('abb-pat', (v) => v === b.pattern);
+    mark('bs-fault', (v) => v === (b.fault ?? 'clean'));
     mark('abb-pro', (v) => (v === 'pro') === b.proMode);
     mark('abb-data', (v) => v === b.audioData);
 
@@ -110,11 +149,15 @@ export class BitSetPanel {
     if (st) {
       const extLock = b.ext && r.extRefLocked;
       const chB = b.bOff ? 'B off' : [b.invert && 'B Ø 180°', b.cycle && 'B cycling'].filter(Boolean).join(', ') || 'A + B';
-      const sig = b.pattern !== 'tone' ? b.pattern.toUpperCase()
-        : `${b.tone === 1000 ? '1 kHz' : '400 Hz'} @ ${b.level === null ? 'OFF' : `${b.level} dBFS`}`;
-      st.textContent = !on ? ''
+      const lvl = b.level === null ? 'OFF' : `${b.level} dBFS`;
+      const names: Record<string, string> = { pink: 'pink noise', white: 'white noise', brown: 'brown noise', walk1s: 'walking 1s', prbs: 'PRBS-15', minmax: 'min/max' };
+      const sig = b.pattern === 'tone' ? `${b.tone === 1000 ? '1 kHz' : '400 Hz'} @ ${lvl}`
+        : b.pattern === 'file' ? `${b.fileName ?? 'file'} @ ${lvl}`
+        : ['pink', 'white', 'brown'].includes(b.pattern) ? `${names[b.pattern]} @ ${lvl}` : names[b.pattern] ?? b.pattern;
+      const fault = b.fault && b.fault !== 'clean' ? ` · line: ${b.fault}` : '';
+      st.textContent = this.loading ? this.loading : !on ? ''
         : b.ext && !extLock ? 'EXT: no AES reference, output muted. Start the POD-33 at 48 kHz to lock.'
-        : `AES OUT ${b.ext ? 48 : b.sampleRate / 1000} kHz${extLock ? ' (locked to POD-33)' : ''} · ${sig} · ${chB}${b.invalid ? ' · V = 1' : ''}`;
+        : `AES OUT ${b.ext ? 48 : b.sampleRate / 1000} kHz${extLock ? ' (locked to POD-33)' : ''} · ${sig} · ${chB}${b.invalid ? ' · V = 1' : ''}${fault}`;
       st.classList.toggle('warn', on && b.ext && !extLock);
     }
   }

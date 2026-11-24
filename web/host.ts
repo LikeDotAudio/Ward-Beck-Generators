@@ -39,6 +39,8 @@ export interface GeneratorRouter {
   setPod33Config(patch: Partial<Pod33Config>): void;
   setBitBuddy(on: boolean): void;
   setBitBuddyConfig(patch: Partial<BitBuddyConfig>): void;
+  /** Load the Bit Spitter's looped file (decoded PCM) into the host's player(s). */
+  setBitBuddyFile?(name: string, l: Float32Array, r: Float32Array, rate: number): Promise<boolean>;
 }
 
 export interface GeneratorHooks {

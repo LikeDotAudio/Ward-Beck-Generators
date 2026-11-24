@@ -18,6 +18,11 @@
 
 import type { GeneratorEngine } from '../host';
 import { hooks } from '../host';
+import { SpitterSynth } from './spitter-synth';
+
+/** The looped file the Bit Spitter plays (pattern 'file'), decoded by the page. */
+let spitterFile: { l: Float32Array; r: Float32Array; rate: number } | null = null;
+export function setSpitterFile(f: { l: Float32Array; r: Float32Array; rate: number } | null): void { spitterFile = f; }
 
 export interface Pod33Config {
   freq: number;            // 100, 400, 1000, 0 (silence)
@@ -27,7 +32,8 @@ export interface Pod33Config {
 }
 
 export interface BitBuddyConfig {
-  pattern: 'tone' | 'walk1s' | 'prbs' | 'minmax';
+  /** Source: tone, noise, test patterns or a looped WAV / MP3 file. */
+  pattern: 'tone' | 'pink' | 'white' | 'brown' | 'walk1s' | 'prbs' | 'minmax' | 'file';
   sampleRate: 48000 | 44100 | 32000 | 96000;
   proMode: boolean;            // true = Professional AES3, false = Consumer S/PDIF
   audioData: 'audio' | 'data'; // PCM audio or non-audio bitstream
@@ -39,6 +45,10 @@ export interface BitBuddyConfig {
   invert: boolean;             // CHB INVERT: channel B out of phase
   bOff: boolean;               // CHB OFF: channel B muted
   invalid: boolean;            // INVALID: validity bit set on the AES stream
+  /** A fault on the AES3 line (what the receiver hears). */
+  fault: 'clean' | 'noise' | 'badeq' | 'jitter' | 'drop' | 'slip' | 'biphase' | 'noclock';
+  /** The looped file's name (pattern 'file'). */
+  fileName?: string;
 }
 
 export const DEFAULT_POD33_CONFIG: Pod33Config = {
@@ -60,6 +70,7 @@ export const DEFAULT_BITBUDDY_CONFIG: BitBuddyConfig = {
   invert: false,
   bOff: false,
   invalid: false,
+  fault: 'clean',
 };
 
 function updateGeneratorEngineStatus(engine: GeneratorEngine): void {
@@ -194,111 +205,22 @@ export function startBitBuddyGenerator(engine: GeneratorEngine, config: BitBuddy
   engine.sourceType = 'test';
   engine.testType = `bitbuddy_${config.pattern}`;
 
-  const merger = ctx.createChannelMerger(2);
+  // Everything (source, channel B, the line fault) is made sample by sample in
+  // SpitterSynth, the same code the TAP runs in Rust.
+  const synth = new SpitterSynth({
+    pattern: config.pattern, level: config.level, tone: config.tone, cycle: config.cycle, invert: config.invert,
+    bOff: config.bOff, muted: config.ext, fault: config.fault ?? 'clean', file: spitterFile,
+  }, ctx.sampleRate);
+  const proc = ctx.createScriptProcessor(2048, 0, 2);
+  proc.onaudioprocess = (e) => {
+    const l = e.outputBuffer.getChannelData(0), r = e.outputBuffer.getChannelData(1);
+    for (let i = 0; i < l.length; i++) { const [a, b] = synth.next(); l[i] = a; r[i] = b; }
+  };
+  const merger = proc;
   const masterGain = ctx.createGain();
   masterGain.gain.value = 0.5;
-
-  // ABS-1 channel A / channel B. B follows the CHB buttons:
-  // OFF mutes it, INVERT flips its polarity, CYCLE switches it on and off
-  // (REFRESH toggles RC7 every 7 x 255 main-loop passes, about 0.52 s).
-  const chA = ctx.createGain();
-  const chB = ctx.createGain();
   const extras: AudioScheduledSourceNode[] = [];
-  chA.connect(merger, 0, 0);
-  if (!config.bOff) {
-    const polarity = ctx.createGain();
-    polarity.gain.value = config.invert ? -1 : 1;
-    chB.connect(polarity);
-    polarity.connect(merger, 0, 1);
-    if (config.cycle) {
-      chB.gain.value = 0.5;
-      const lfo = ctx.createOscillator();
-      lfo.type = 'square';
-      lfo.frequency.value = 1 / (2 * 0.52);
-      const depth = ctx.createGain();
-      depth.gain.value = 0.5;
-      lfo.connect(depth);
-      depth.connect(chB.gain);
-      lfo.start();
-      extras.push(lfo);
-    }
-  }
-  // EXT with no AES reference in the browser: the ABS-1 stops its clock and mutes.
-  if (config.ext) masterGain.gain.value = 0;
-
-  let sourceNode: OscillatorNode | AudioBufferSourceNode | null = null;
-
-  if (config.pattern === 'tone') {
-    // ABS-1 TONE (1KHz / 400Hz) at the AUDIO LEVEL lamp (0 / -12 / -20 dBFS, OFF)
-    const osc = ctx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.value = config.tone;
-    const toneGain = ctx.createGain();
-    toneGain.gain.value = config.level === null ? 0 : Math.pow(10, config.level / 20);
-    osc.connect(toneGain);
-    toneGain.connect(chA);
-    toneGain.connect(chB);
-    osc.start();
-    sourceNode = osc;
-  } else if (config.pattern === 'walk1s') {
-    // Walking 1s: Synthetic pulse impulses sweeping across 24 bits
-    const osc = ctx.createOscillator();
-    osc.type = 'sawtooth';
-    osc.frequency.value = 120; // 120 Hz pulse frame rate
-
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.value = 1800;
-    filter.Q.value = 8.0;
-
-    const gain = ctx.createGain();
-    gain.gain.value = 0.35;
-
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(chA);
-    gain.connect(chB);
-
-    osc.start();
-    sourceNode = osc;
-  } else if (config.pattern === 'prbs') {
-    // PRBS-15: Pseudo-Random Binary Sequence noise burst generator
-    const bufferSize = ctx.sampleRate * 2;
-    const noiseBuffer = ctx.createBuffer(2, bufferSize, ctx.sampleRate);
-    const left = noiseBuffer.getChannelData(0);
-    const right = noiseBuffer.getChannelData(1);
-
-    let lfsr = 0x7ace;
-    for (let i = 0; i < bufferSize; i++) {
-      // 15-bit Galois LFSR (polynomial: x^15 + x^14 + 1)
-      const bit = ((lfsr >> 0) ^ (lfsr >> 1)) & 1;
-      lfsr = (lfsr >> 1) | (bit << 14);
-      const val = bit ? 0.35 : -0.35;
-      left[i] = val;
-      right[i] = val;
-    }
-
-    const prbsSource = ctx.createBufferSource();
-    prbsSource.buffer = noiseBuffer;
-    prbsSource.loop = true;
-    prbsSource.connect(chA);
-    prbsSource.connect(chB);
-    prbsSource.start();
-    sourceNode = prbsSource;
-  } else if (config.pattern === 'minmax') {
-    // Polarity / Min-Max Stress Test: 60 Hz full-scale square wave
-    const osc = ctx.createOscillator();
-    osc.type = 'square';
-    osc.frequency.value = 60;
-    const gain = ctx.createGain();
-    gain.gain.value = 0.95; // Near 0 dBFS peak square
-    osc.connect(gain);
-    gain.connect(chA);
-    gain.connect(chB);
-    osc.start();
-    sourceNode = osc;
-  }
-
+  const sourceNode: OscillatorNode | AudioBufferSourceNode | null = null;
   merger.connect(masterGain);
   masterGain.connect(bus);
 
@@ -326,6 +248,9 @@ export function stopBitBuddyGenerator(engine: GeneratorEngine, notify = true): v
     }
     if (node.masterGain) {
       try { node.masterGain.disconnect(); } catch (_) {}
+    }
+    if (node.merger) {
+      try { node.merger.onaudioprocess = null; node.merger.disconnect(); } catch (_) {}
     }
     (engine as any).bitBuddyNode = null;
   }
