@@ -102,43 +102,28 @@ export class GeneratorsView {
               </div>
             </div>
 
-            <!-- Frequency Selection -->
-            <div class="rc-pod-col">
-              <div class="rc-control-group-title">CALIBRATED FREQUENCY</div>
-              <div class="rc-btn-group" role="group">
-                <button type="button" class="rc-btn-sel ${r.pod33Config.freq === 100 ? 'active' : ''}" data-pod-freq="100">100 Hz</button>
-                <button type="button" class="rc-btn-sel ${r.pod33Config.freq === 400 ? 'active' : ''}" data-pod-freq="400">400 Hz</button>
-                <button type="button" class="rc-btn-sel ${r.pod33Config.freq === 1000 ? 'active' : ''}" data-pod-freq="1000">1 kHz (0 VU)</button>
-                <button type="button" class="rc-btn-sel ${r.pod33Config.freq === 0 ? 'active' : ''}" data-pod-freq="0">Silence</button>
-              </div>
-            </div>
-
-            <!-- Level Selection (dBFS) -->
-            <div class="rc-pod-col">
-              <div class="rc-control-group-title">CALIBRATED LEVEL (dBFS)</div>
-              <div class="rc-btn-group" role="group">
-                <button type="button" class="rc-btn-sel ${r.pod33Config.levelDb === 0 ? 'active' : ''}" data-pod-lvl="0">0 dB</button>
-                <button type="button" class="rc-btn-sel ${r.pod33Config.levelDb === -12 ? 'active' : ''}" data-pod-lvl="-12">-12</button>
-                <button type="button" class="rc-btn-sel ${r.pod33Config.levelDb === -14 ? 'active' : ''}" data-pod-lvl="-14">-14</button>
-                <button type="button" class="rc-btn-sel ${r.pod33Config.levelDb === -18 ? 'active' : ''}" data-pod-lvl="-18">-18 (EBU)</button>
-                <button type="button" class="rc-btn-sel ${r.pod33Config.levelDb === -20 ? 'active' : ''}" data-pod-lvl="-20">-20 (SMPTE)</button>
-                <button type="button" class="rc-btn-sel ${r.pod33Config.levelDb === -24 ? 'active' : ''}" data-pod-lvl="-24">-24</button>
-                <button type="button" class="rc-btn-sel ${r.pod33Config.levelDb === -40 ? 'active' : ''}" data-pod-lvl="-40">-40</button>
-                <button type="button" class="rc-btn-sel ${r.pod33Config.levelDb === -100 ? 'active' : ''}" data-pod-lvl="-100">OFF</button>
-              </div>
-            </div>
-
-            <!-- Channel Routing & Phase Invert -->
-            <div class="rc-pod-col">
-              <div class="rc-control-group-title">CHANNEL &amp; PHASE</div>
-              <div class="rc-btn-group" role="group">
-                <button type="button" class="rc-btn-sel ${r.pod33Config.channelMode === 'stereo' ? 'active' : ''}" data-pod-ch="stereo">Stereo</button>
-                <button type="button" class="rc-btn-sel ${r.pod33Config.channelMode === 'left' ? 'active' : ''}" data-pod-ch="left">Left Only</button>
-                <button type="button" class="rc-btn-sel ${r.pod33Config.channelMode === 'right' ? 'active' : ''}" data-pod-ch="right">Right Only</button>
-                <button type="button" class="rc-btn-sel ${r.pod33Config.channelMode === 'invert' ? 'active' : ''}" data-pod-ch="invert" title="Phase Invert 180° on Right channel">Ø Invert 180°</button>
-              </div>
-            </div>
           </div>
+
+          <!-- The four rear AES outputs: each its own frequency, level and channel / phase -->
+          <table class="rc-pod-outs" aria-label="POD-33 AES outputs">
+            <thead><tr>
+              <th></th>
+              <th class="rc-control-group-title">CALIBRATED FREQUENCY</th>
+              <th class="rc-control-group-title">CALIBRATED LEVEL (dBFS)</th>
+              <th class="rc-control-group-title">CHANNEL &amp; PHASE</th>
+            </tr></thead>
+            <tbody>${[0, 1, 2, 3].map((n) => `
+              <tr class="rc-pod-out" data-pod-row="${n}">
+                <th scope="row" class="rc-pod-out-name">AES ${n + 1}</th>
+                <td><div class="rc-btn-group" role="group" aria-label="AES ${n + 1} frequency">${([[100, '100 Hz'], [400, '400 Hz'], [1000, '1 kHz'], [0, 'Silence']] as const)
+                  .map(([v, l]) => `<button type="button" class="rc-btn-sel" data-pod-out="${n}" data-pod-freq="${v}">${l}</button>`).join('')}</div></td>
+                <td><div class="rc-btn-group" role="group" aria-label="AES ${n + 1} level">${([[0, '0'], [-12, '-12'], [-14, '-14'], [-18, '-18 EBU'], [-20, '-20 SMPTE'], [-24, '-24'], [-40, '-40'], [-100, 'OFF']] as const)
+                  .map(([v, l]) => `<button type="button" class="rc-btn-sel" data-pod-out="${n}" data-pod-lvl="${v}">${l}</button>`).join('')}</div></td>
+                <td><div class="rc-btn-group" role="group" aria-label="AES ${n + 1} channel">${([['stereo', 'Stereo'], ['left', 'Left'], ['right', 'Right'], ['invert', 'Ø 180°']] as const)
+                  .map(([v, l]) => `<button type="button" class="rc-btn-sel" data-pod-out="${n}" data-pod-ch="${v}"${v === 'invert' ? ' title="Phase invert 180° on the right channel"' : ''}>${l}</button>`).join('')}</div></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
         </div>
 
         <!-- CBC / RADIO-CANADA MXL TEST GENERATOR & PATTERN STUDIO -->
@@ -205,9 +190,11 @@ ${this.bitSet.html()}
       if (t.id === 'btnTogglePod33') return r.setPod33(!r.pod33Engaged);
       if (t.id === 'btnCbcPipeline') return this.toggleCbcPipeline();
       if (d.podRef !== undefined) return r.setPod33Config({ refClock: d.podRef as any });
-      if (d.podFreq !== undefined) return r.setPod33Config({ freq: +d.podFreq });
-      if (d.podLvl !== undefined) return r.setPod33Config({ levelDb: +d.podLvl });
-      if (d.podCh !== undefined) return r.setPod33Config({ channelMode: d.podCh as any });
+      const out = d.podOut !== undefined ? +d.podOut : r.pod33Out ?? 0;
+      const setOut = (patch: any) => (r.setPod33Output ? r.setPod33Output(out, patch) : r.setPod33Config(patch));
+      if (d.podFreq !== undefined) return setOut({ freq: +d.podFreq });
+      if (d.podLvl !== undefined) return setOut({ levelDb: +d.podLvl });
+      if (d.podCh !== undefined) return setOut({ channelMode: d.podCh });
       if (d.abbPat !== undefined) return r.setBitBuddyConfig({ pattern: d.abbPat as any });
       if (d.abbPro !== undefined) return r.setBitBuddyConfig({ proMode: d.abbPro === 'pro' });
       if (d.abbData !== undefined) return r.setBitBuddyConfig({ audioData: d.abbData as any });
@@ -327,9 +314,15 @@ ${this.bitSet.html()}
     const mark = (attr: string, match: (v: string) => boolean) =>
       root.querySelectorAll(`[${attr}]`).forEach((b) => b.classList.toggle('active', match(b.getAttribute(attr)!)));
     mark('data-pod-ref', (v) => v === pc.refClock);
-    mark('data-pod-freq', (v) => +v === pc.freq);
-    mark('data-pod-lvl', (v) => +v === pc.levelDb);
-    mark('data-pod-ch', (v) => v === pc.channelMode);
+    // Each AES output's own buttons light from its own settings
+    const outOf = (b: Element) => r.pod33Outputs?.[+(b.getAttribute('data-pod-out') ?? r.pod33Out ?? 0)] ?? pc;
+    const markOut = (attr: string, match: (v: string, o: { freq: number; levelDb: number; channelMode: string }) => boolean) =>
+      root.querySelectorAll(`[${attr}]`).forEach((b) => b.classList.toggle('active', match(b.getAttribute(attr)!, outOf(b))));
+    markOut('data-pod-freq', (v, o) => +v === o.freq);
+    markOut('data-pod-lvl', (v, o) => +v === o.levelDb);
+    markOut('data-pod-ch', (v, o) => v === o.channelMode);
+    root.querySelectorAll('[data-pod-row]').forEach((row) =>
+      row.classList.toggle('playing', r.pod33Engaged && +row.getAttribute('data-pod-row')! === (r.pod33Out ?? 0)));
     root.querySelectorAll('[data-pod-ref] .rc-led-dot').forEach((dot) =>
       dot.classList.toggle('lit-green', dot.parentElement?.getAttribute('data-pod-ref') === pc.refClock));
     this.bitSet.paint(root);

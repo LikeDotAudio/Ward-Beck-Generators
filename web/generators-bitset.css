@@ -77,3 +77,12 @@ body.theme-mccurdy-light .bitset-extras { border-top-color: #b5b1a6; }
 #btnCbcPipeline:disabled { opacity: .45; cursor: not-allowed; }
 body.theme-mccurdy .rc-cbc-svc, body.theme-mccurdy-light .rc-cbc-svc { color: #475569; border-color: #b5b1a6; }
 body.theme-mccurdy .rc-cbc-svc.up, body.theme-mccurdy-light .rc-cbc-svc.up { color: #1e293b; border-color: #15803d; }
+
+/* XTM extras sit in the middle, under the cable, between the two units */
+.bitset-cable .bitset-extras {
+  flex-direction: column; align-items: stretch; gap: 4px;
+  margin-top: 10px; padding-top: 8px; border-top: 1px dashed #234c75;
+}
+.bitset-cable .bitset-extras-title { margin: 0; text-align: center; }
+.bitset-cable .bitset-chip { width: 100%; }
+.bitset-cable .bitset-sep { width: 100%; height: 1px; margin: 2px 0; }

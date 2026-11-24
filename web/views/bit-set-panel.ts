@@ -89,19 +89,19 @@ export class BitSetPanel {
             <select class="bitset-fault" id="bsFault" aria-label="Fault on the line">
               ${FAULTS.map(([f, l, c]) => `<option value="${f}" title="CS8414 error code ${c}: ${ECODE[c]}">${l}</option>`).join('')}
             </select>
+            <div class="bitset-extras" title="XTM extras: not on the real units">
+              <span class="bitset-extras-title">XTM EXTRAS</span>
+              ${([['tone', 'Tone'], ['walk1s', 'Walking 1s'], ['prbs', 'PRBS-15'], ['minmax', 'Min/Max']] as const)
+                .map(([v, l]) => `<button type="button" class="bitset-chip" data-abb-pat="${v}">${l}</button>`).join('')}
+              <span class="bitset-sep"></span>
+              <button type="button" class="bitset-chip" data-abb-pro="pro">Professional</button>
+              <button type="button" class="bitset-chip" data-abb-pro="cons">Consumer</button>
+              <span class="bitset-sep"></span>
+              <button type="button" class="bitset-chip" data-abb-data="audio">Audio</button>
+              <button type="button" class="bitset-chip" data-abb-data="data">Non-audio</button>
+            </div>
           </div>
           <figure class="bitset-unit" id="bsAbbUnit">${this.abbSvg()}</figure>
-        </div>
-        <div class="bitset-extras">
-          <span class="bitset-extras-title">XTM EXTRAS (not on the real unit)</span>
-          ${([['tone', 'Tone'], ['walk1s', 'Walking 1s'], ['prbs', 'PRBS-15'], ['minmax', 'Min/Max']] as const)
-            .map(([v, l]) => `<button type="button" class="bitset-chip" data-abb-pat="${v}">${l}</button>`).join('')}
-          <span class="bitset-sep"></span>
-          <button type="button" class="bitset-chip" data-abb-pro="pro">Professional</button>
-          <button type="button" class="bitset-chip" data-abb-pro="cons">Consumer</button>
-          <span class="bitset-sep"></span>
-          <button type="button" class="bitset-chip" data-abb-data="audio">Audio</button>
-          <button type="button" class="bitset-chip" data-abb-data="data">Non-audio</button>
         </div>
       </div>`;
   }

@@ -25,6 +25,11 @@ export interface GeneratorEngine {
 /** The router state the generators tab drives (XTM: the Web Router owns it). */
 export interface GeneratorRouter {
   pod33Config: Pod33Config;
+  /** The four rear AES outputs, each its own frequency / level / channel (optional for older hosts). */
+  pod33Outputs?: Pick<Pod33Config, 'freq' | 'levelDb' | 'channelMode'>[];
+  /** Which output is playing. */
+  pod33Out?: number;
+  setPod33Output?(n: number, patch: Partial<Pick<Pod33Config, 'freq' | 'levelDb' | 'channelMode'>>): void;
   pod33Engaged: boolean;
   bitBuddyConfig: BitBuddyConfig;
   bitBuddyEngaged: boolean;
