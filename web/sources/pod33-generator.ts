@@ -26,6 +26,8 @@ export function setSpitterFile(f: { l: Float32Array; r: Float32Array; rate: numb
 
 export interface Pod33Config {
   freq: number;            // 100, 400, 1000, 0 (silence)
+  /** Split tone: the right channel's own frequency (e.g. 1 kHz left / 4 kHz right); null = same as left. */
+  freqR?: number | null;
   levelDb: number;         // 0, -6, -12, -14, -18, -20, -24, -40, -50, -60, -100 (off)
   refClock: 'video' | 'aes' | 'int48' | 'int96';
   channelMode: 'stereo' | 'left' | 'right' | 'invert';
@@ -143,7 +145,15 @@ export function startPod33Generator(engine: GeneratorEngine, config: Pod33Config
     osc.connect(leftGain);
     leftGain.connect(merger, 0, 0);
 
-    osc.connect(rightGain);
+    // Split tone: the right channel runs its own oscillator
+    let oscR: OscillatorNode | null = null;
+    if (config.freqR && config.freqR !== config.freq) {
+      oscR = ctx.createOscillator();
+      oscR.type = 'sine';
+      oscR.frequency.value = config.freqR;
+      oscR.connect(rightGain);
+      oscR.start();
+    } else osc.connect(rightGain);
     rightGain.connect(merger, 0, 1);
 
     const outGain = ctx.createGain();
@@ -153,7 +163,7 @@ export function startPod33Generator(engine: GeneratorEngine, config: Pod33Config
 
     osc.start();
 
-    (engine as any).pod33Node = { osc, leftGain, rightGain, merger, outGain, config };
+    (engine as any).pod33Node = { osc, oscR, leftGain, rightGain, merger, outGain, config };
     (engine as any).testOsc = osc;
     (engine as any).testGain = merger;
   } else {
@@ -176,6 +186,10 @@ export function stopPod33Generator(engine: GeneratorEngine, notify = true): void
     if (node.osc) {
       try { node.osc.stop(); } catch (_) {}
       try { node.osc.disconnect(); } catch (_) {}
+    }
+    if (node.oscR) {
+      try { node.oscR.stop(); } catch (_) {}
+      try { node.oscR.disconnect(); } catch (_) {}
     }
     if (node.outGain) {
       try { node.outGain.disconnect(); } catch (_) {}

@@ -115,8 +115,8 @@ export class GeneratorsView {
             <tbody>${[0, 1, 2, 3].map((n) => `
               <tr class="rc-pod-out" data-pod-row="${n}">
                 <th scope="row" class="rc-pod-out-name">AES ${n + 1}</th>
-                <td><div class="rc-btn-group" role="group" aria-label="AES ${n + 1} frequency">${([[100, '100 Hz'], [400, '400 Hz'], [1000, '1 kHz'], [0, 'Silence']] as const)
-                  .map(([v, l]) => `<button type="button" class="rc-btn-sel" data-pod-out="${n}" data-pod-freq="${v}">${l}</button>`).join('')}</div></td>
+                <td><div class="rc-btn-group" role="group" aria-label="AES ${n + 1} frequency">${([[100, '100 Hz'], [400, '400 Hz'], [1000, '1 kHz'], ['100/400', '100/400'], ['1000/4000', '1k/4k'], ['10000/20000', '10k/20k'], [0, 'Silence']] as const)
+                  .map(([v, l]) => `<button type="button" class="rc-btn-sel" data-pod-out="${n}" data-pod-freq="${v}"${String(v).includes('/') ? ` title="Split: left ${l.split('/')[0]}, right ${l.split('/')[1]}"` : ''}>${l}</button>`).join('')}</div></td>
                 <td><div class="rc-btn-group" role="group" aria-label="AES ${n + 1} level">${([[0, '0'], [-12, '-12'], [-14, '-14'], [-18, '-18 EBU'], [-20, '-20 SMPTE'], [-24, '-24'], [-40, '-40'], [-100, 'OFF']] as const)
                   .map(([v, l]) => `<button type="button" class="rc-btn-sel" data-pod-out="${n}" data-pod-lvl="${v}">${l}</button>`).join('')}</div></td>
                 <td><div class="rc-btn-group" role="group" aria-label="AES ${n + 1} channel">${([['stereo', 'Stereo'], ['left', 'Left'], ['right', 'Right'], ['invert', 'Ø 180°']] as const)
@@ -192,7 +192,10 @@ ${this.bitSet.html()}
       if (d.podRef !== undefined) return r.setPod33Config({ refClock: d.podRef as any });
       const out = d.podOut !== undefined ? +d.podOut : r.pod33Out ?? 0;
       const setOut = (patch: any) => (r.setPod33Output ? r.setPod33Output(out, patch) : r.setPod33Config(patch));
-      if (d.podFreq !== undefined) return setOut({ freq: +d.podFreq });
+      if (d.podFreq !== undefined) {
+        const [fl, fr] = d.podFreq.split('/').map(Number);
+        return setOut({ freq: fl, freqR: fr ?? null });
+      }
       if (d.podLvl !== undefined) return setOut({ levelDb: +d.podLvl });
       if (d.podCh !== undefined) return setOut({ channelMode: d.podCh });
       if (d.cbcLvl !== undefined) {
@@ -315,7 +318,10 @@ ${this.bitSet.html()}
     const outOf = (b: Element) => r.pod33Outputs?.[+(b.getAttribute('data-pod-out') ?? r.pod33Out ?? 0)] ?? pc;
     const markOut = (attr: string, match: (v: string, o: { freq: number; levelDb: number; channelMode: string }) => boolean) =>
       root.querySelectorAll(`[${attr}]`).forEach((b) => b.classList.toggle('active', match(b.getAttribute(attr)!, outOf(b))));
-    markOut('data-pod-freq', (v, o) => +v === o.freq);
+    markOut('data-pod-freq', (v, o) => {
+      const [fl, fr] = v.split('/').map(Number);
+      return fl === o.freq && (fr ?? null) === ((o as any).freqR ?? null);
+    });
     markOut('data-pod-lvl', (v, o) => +v === o.levelDb);
     markOut('data-pod-ch', (v, o) => v === o.channelMode);
     root.querySelectorAll('[data-pod-row]').forEach((row) =>
