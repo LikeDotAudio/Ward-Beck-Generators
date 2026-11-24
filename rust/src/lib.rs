@@ -3,6 +3,8 @@
 //! flows (POD-33 1 kHz tone, ABP-1 walking 1s) and the Test Signals grains (sine,
 //! pink noise, sweep, PRBS-15 Bit Buddy, silence). No I/O: callers own the rings.
 
+pub mod spitter;
+
 /// POD-33 calibrated tone: a continuous sine, one block at a time.
 pub struct Tone {
     phase: f64,
