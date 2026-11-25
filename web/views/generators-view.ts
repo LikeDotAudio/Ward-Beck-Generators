@@ -136,7 +136,7 @@ export class GeneratorsView {
         <div class="rc-cbc-studio-panel">
           <div class="rc-cbc-header">
             <div class="rc-cbc-title">
-              <strong>CBC / RADIO-CANADA MXL TEST GENERATOR &amp; PATTERN STUDIO</strong>
+              <a href="${DAEMON}/CBC" target="_blank" rel="noopener" title="Every CBC / Radio-Canada test tool on one page (patterns, level, flows, Generator, WebRTC, File Player, MXL Info): the TAP's /CBC, driven by /api/cbc"><strong>CBC / RADIO-CANADA MXL TEST TOOLS ↗</strong></a>
             </div>
             <div class="rc-cbc-svcs" id="rcCbcSvcs">
               ${CBC_SERVICES.map(([k, label, port]) => `<a class="rc-cbc-svc" data-cbc-svc="${k}" href="http://localhost:${port}" target="_blank" rel="noopener" title="${label} (:${port})"><span class="rc-led-dot"></span>${label}</a>`).join('')}
@@ -144,32 +144,6 @@ export class GeneratorsView {
             </div>
           </div>
 
-          <div class="rc-cbc-grid">
-            <!-- Video Test Patterns -->
-            <div class="rc-cbc-col">
-              <div class="rc-cbc-label">VIDEO TEST PATTERN</div>
-              <select id="rcCbcVideoSelect" class="rc-cbc-select"><option>—</option></select>
-              <div class="rc-cbc-flow-info" id="rcCbcVideoFlow"></div>
-            </div>
-
-            <!-- Audio Test Patterns -->
-            <div class="rc-cbc-col">
-              <div class="rc-cbc-label">AUDIO TEST PATTERN</div>
-              <select id="rcCbcAudioSelect" class="rc-cbc-select"><option>—</option></select>
-              <div class="rc-cbc-flow-info" id="rcCbcAudioFlow"></div>
-            </div>
-
-            <!-- Calibrated Output Level -->
-            <div class="rc-cbc-col">
-              <div class="rc-cbc-label">OUTPUT LEVEL</div>
-              <div class="rc-cbc-btn-group">
-                <button type="button" class="rc-cbc-btn active" data-cbc-lvl="-20">-20 dBFS (EBU)</button>
-                <button type="button" class="rc-cbc-btn" data-cbc-lvl="-18">-18 dBFS (0 VU)</button>
-                <button type="button" class="rc-cbc-btn" data-cbc-lvl="-12">-12 dBFS</button>
-                <button type="button" class="rc-cbc-btn" data-cbc-lvl="0">0 dBFS (Ceiling)</button>
-              </div>
-            </div>
-          </div>
         </div>
 ${this.bitSet.html()}
 ${this.bitSet8.html()}
