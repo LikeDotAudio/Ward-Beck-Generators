@@ -81,32 +81,6 @@ export class GeneratorsView {
             </button>
           </div>
 
-          <div class="rc-pod-grid">
-            <!-- Genlock Reference Clock -->
-            <div class="rc-pod-col">
-              <div class="rc-control-group-title">REFERENCE LOCK</div>
-              <div class="rc-btn-group" role="group">
-                <button type="button" class="rc-btn-sel ${r.pod33Config.refClock === 'video' ? 'active' : ''}" data-pod-ref="video">
-                  <span class="rc-led-dot ${r.pod33Config.refClock === 'video' ? 'lit-green' : ''}"></span>
-                  VIDEO
-                </button>
-                <button type="button" class="rc-btn-sel ${r.pod33Config.refClock === 'aes' ? 'active' : ''}" data-pod-ref="aes">
-                  <span class="rc-led-dot ${r.pod33Config.refClock === 'aes' ? 'lit-green' : ''}"></span>
-                  AES DARS
-                </button>
-                <button type="button" class="rc-btn-sel ${r.pod33Config.refClock === 'int48' ? 'active' : ''}" data-pod-ref="int48">
-                  <span class="rc-led-dot ${r.pod33Config.refClock === 'int48' ? 'lit-green' : ''}"></span>
-                  INT 48k
-                </button>
-                <button type="button" class="rc-btn-sel ${r.pod33Config.refClock === 'int96' ? 'active' : ''}" data-pod-ref="int96">
-                  <span class="rc-led-dot ${r.pod33Config.refClock === 'int96' ? 'lit-green' : ''}"></span>
-                  INT 96k
-                </button>
-              </div>
-            </div>
-
-          </div>
-
           <!-- The four rear AES outputs: each its own frequency, level and channel / phase -->
           <table class="rc-pod-outs" aria-label="POD-33 AES outputs">
             <thead><tr>
