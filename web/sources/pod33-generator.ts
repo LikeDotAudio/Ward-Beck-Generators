@@ -28,6 +28,10 @@ export interface Pod33Config {
   freq: number;            // 100, 400, 1000, 0 (silence)
   /** Split tone: the right channel's own frequency (e.g. 1 kHz left / 4 kHz right); null = same as left. */
   freqR?: number | null;
+  /** Beeps per second (1, 2, 3, 4: a beep every 1/1, 1/2, 1/3, 1/4 s); 0 / absent = steady tone. */
+  beep?: number;
+  /** Beep the left channel only (the right stays steady): a stereo ident. */
+  beepLeft?: boolean;
   levelDb: number;         // 0, -6, -12, -14, -18, -20, -24, -40, -50, -60, -100 (off)
   refClock: 'video' | 'aes' | 'int48' | 'int96';
   channelMode: 'stereo' | 'left' | 'right' | 'invert';
@@ -159,11 +163,32 @@ export function startPod33Generator(engine: GeneratorEngine, config: Pod33Config
     const outGain = ctx.createGain();
     outGain.gain.value = 1.0;
     merger.connect(outGain);
+
+    // Beep: the tone on for half of each 1/n s, on both channels or the left only
+    let beepOsc: OscillatorNode | null = null;
+    if (config.beep && config.beep > 0) {
+      beepOsc = ctx.createOscillator();
+      beepOsc.type = 'square';
+      beepOsc.frequency.value = config.beep;
+      const depth = ctx.createGain();
+      depth.gain.value = 0.5;
+      beepOsc.connect(depth);
+      for (const g of config.beepLeft ? [leftGain] : [leftGain, rightGain]) {
+        const gate = ctx.createGain();
+        gate.gain.value = 0.5; // 0.5 ± 0.5 = on / off
+        depth.connect(gate.gain);
+        // re-route the channel through its gate
+        g.disconnect();
+        g.connect(gate);
+        gate.connect(merger, 0, g === leftGain ? 0 : 1);
+      }
+      beepOsc.start();
+    }
     outGain.connect(bus);
 
     osc.start();
 
-    (engine as any).pod33Node = { osc, oscR, leftGain, rightGain, merger, outGain, config };
+    (engine as any).pod33Node = { osc, oscR, beepOsc, leftGain, rightGain, merger, outGain, config };
     (engine as any).testOsc = osc;
     (engine as any).testGain = merger;
   } else {
@@ -186,6 +211,9 @@ export function stopPod33Generator(engine: GeneratorEngine, notify = true): void
     if (node.osc) {
       try { node.osc.stop(); } catch (_) {}
       try { node.osc.disconnect(); } catch (_) {}
+    }
+    if (node.beepOsc) {
+      try { node.beepOsc.stop(); } catch (_) {}
     }
     if (node.oscR) {
       try { node.oscR.stop(); } catch (_) {}

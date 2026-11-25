@@ -26,10 +26,10 @@ export interface GeneratorEngine {
 export interface GeneratorRouter {
   pod33Config: Pod33Config;
   /** The four rear AES outputs, each its own frequency / level / channel (optional for older hosts). */
-  pod33Outputs?: Pick<Pod33Config, 'freq' | 'freqR' | 'levelDb' | 'channelMode'>[];
+  pod33Outputs?: Pick<Pod33Config, 'freq' | 'freqR' | 'levelDb' | 'channelMode' | 'beep' | 'beepLeft'>[];
   /** Which output is playing. */
   pod33Out?: number;
-  setPod33Output?(n: number, patch: Partial<Pick<Pod33Config, 'freq' | 'freqR' | 'levelDb' | 'channelMode'>>): void;
+  setPod33Output?(n: number, patch: Partial<Pick<Pod33Config, 'freq' | 'freqR' | 'levelDb' | 'channelMode' | 'beep' | 'beepLeft'>>): void;
   pod33Engaged: boolean;
   bitBuddyConfig: BitBuddyConfig;
   bitBuddyEngaged: boolean;

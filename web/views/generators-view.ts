@@ -114,6 +114,7 @@ export class GeneratorsView {
               <th class="rc-control-group-title">CALIBRATED FREQUENCY</th>
               <th class="rc-control-group-title">CALIBRATED LEVEL (dBFS)</th>
               <th class="rc-control-group-title">CHANNEL &amp; PHASE</th>
+              <th class="rc-control-group-title">BEEP</th>
             </tr></thead>
             <tbody>${[0, 1, 2, 3].map((n) => `
               <tr class="rc-pod-out" data-pod-row="${n}">
@@ -124,6 +125,8 @@ export class GeneratorsView {
                   .map(([v, l]) => `<button type="button" class="rc-btn-sel" data-pod-out="${n}" data-pod-lvl="${v}">${l}</button>`).join('')}</div></td>
                 <td><div class="rc-btn-group" role="group" aria-label="AES ${n + 1} channel">${([['stereo', 'Stereo'], ['left', 'Left'], ['right', 'Right'], ['invert', 'Ø 180°']] as const)
                   .map(([v, l]) => `<button type="button" class="rc-btn-sel" data-pod-out="${n}" data-pod-ch="${v}"${v === 'invert' ? ' title="Phase invert 180° on the right channel"' : ''}>${l}</button>`).join('')}</div></td>
+                <td><div class="rc-btn-group" role="group" aria-label="AES ${n + 1} beep">${([[0, 'Off'], [1, '1/1'], [2, '1/2'], [3, '1/3'], [4, '1/4']] as const)
+                  .map(([v, l]) => `<button type="button" class="rc-btn-sel" data-pod-out="${n}" data-pod-beep="${v}" title="${v ? `A beep every ${l} s` : 'Steady tone'}">${l}</button>`).join('')}<button type="button" class="rc-btn-sel" data-pod-out="${n}" data-pod-beepl="1" title="Beep the left channel only (stereo ident)">L only</button></div></td>
               </tr>`).join('')}
             </tbody>
           </table>
@@ -202,6 +205,8 @@ ${this.bitSet8.html()}
       }
       if (d.podLvl !== undefined) return setOut({ levelDb: +d.podLvl });
       if (d.podCh !== undefined) return setOut({ channelMode: d.podCh });
+      if (d.podBeep !== undefined) return setOut({ beep: +d.podBeep });
+      if (d.podBeepl !== undefined) return setOut({ beepLeft: !(r.pod33Outputs?.[out] as any)?.beepLeft });
       if (d.cbcLvl !== undefined) {
         const lvl = parseFloat(d.cbcLvl);
         this.cbcRoot.querySelectorAll('[data-cbc-lvl]').forEach((b) => b.classList.toggle('active', b === t));
@@ -328,6 +333,8 @@ ${this.bitSet8.html()}
     });
     markOut('data-pod-lvl', (v, o) => +v === o.levelDb);
     markOut('data-pod-ch', (v, o) => v === o.channelMode);
+    markOut('data-pod-beep', (v, o) => +v === ((o as any).beep ?? 0));
+    markOut('data-pod-beepl', (_v, o) => !!(o as any).beepLeft);
     root.querySelectorAll('[data-pod-row]').forEach((row) =>
       row.classList.toggle('playing', r.pod33Engaged && +row.getAttribute('data-pod-row')! === (r.pod33Out ?? 0)));
     root.querySelectorAll('[data-pod-ref] .rc-led-dot').forEach((dot) =>
