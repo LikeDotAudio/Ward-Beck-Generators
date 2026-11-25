@@ -35,7 +35,7 @@ export interface Pod33Config {
 
 export interface BitBuddyConfig {
   /** Source: tone, noise, test patterns or a looped WAV / MP3 file. */
-  pattern: 'tone' | 'pink' | 'white' | 'brown' | 'walk1s' | 'prbs' | 'minmax' | 'file';
+  pattern: 'sweep' | 'tone' | 'pink' | 'white' | 'brown' | 'walk1s' | 'prbs' | 'minmax' | 'file';
   sampleRate: 48000 | 44100 | 32000 | 96000;
   proMode: boolean;            // true = Professional AES3, false = Consumer S/PDIF
   audioData: 'audio' | 'data'; // PCM audio or non-audio bitstream
@@ -61,7 +61,7 @@ export const DEFAULT_POD33_CONFIG: Pod33Config = {
 };
 
 export const DEFAULT_BITBUDDY_CONFIG: BitBuddyConfig = {
-  pattern: 'tone',
+  pattern: 'sweep',
   sampleRate: 48000,
   proMode: true,
   audioData: 'audio',

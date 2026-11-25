@@ -6,7 +6,7 @@
  * keep the two in step.
  */
 
-export type SpitterPattern = 'tone' | 'pink' | 'white' | 'brown' | 'walk1s' | 'prbs' | 'minmax' | 'file';
+export type SpitterPattern = 'sweep' | 'tone' | 'pink' | 'white' | 'brown' | 'walk1s' | 'prbs' | 'minmax' | 'file';
 export type SpitterFault = 'clean' | 'noise' | 'badeq' | 'jitter' | 'drop' | 'slip' | 'biphase' | 'noclock';
 
 export interface SpitterParams {
@@ -23,6 +23,8 @@ export interface SpitterParams {
 }
 
 const TWO_PI = Math.PI * 2;
+/** One 20 Hz → 20 kHz sweep (seconds); the TAP's SWEEP_S. */
+export const SWEEP_S = 10;
 
 export class SpitterSynth {
   private t = 0;            // samples since start
@@ -61,6 +63,12 @@ export class SpitterSynth {
         v = amp * Math.sin(this.phase);
         this.phase = (this.phase + TWO_PI * p.tone / sr) % TWO_PI;
         break;
+      case 'sweep': { // 20 Hz → 20 kHz logarithmic, every SWEEP_S seconds
+        const t = (this.t / sr) % SWEEP_S;
+        v = amp * Math.sin(this.phase);
+        this.phase = (this.phase + TWO_PI * 20 * Math.pow(1000, t / SWEEP_S) / sr) % TWO_PI;
+        break;
+      }
       case 'white':
         v = amp * (this.rnd() * 2 - 1);
         break;

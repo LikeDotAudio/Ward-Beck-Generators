@@ -33,7 +33,7 @@ const PANEL: Group[] = [
 ];
 /** XTM extras: not on the real unit. */
 const EXTRAS: Group[] = [
-  { title: 'SOURCE', attr: 'abb-pat', opts: [['tone', 'Tone'], ['pink', 'Pink'], ['white', 'White'], ['brown', 'Brown'], ['walk1s', 'Walking 1s'], ['prbs', 'PRBS-15'], ['minmax', 'Min/Max'], ['file', 'WAV / MP3…', 'Loop an audio file (click again to load another)']] },
+  { title: 'SOURCE', attr: 'abb-pat', opts: [['sweep', 'Sweep', '20 Hz → 20 kHz every 10 s'], ['tone', 'Tone'], ['pink', 'Pink'], ['white', 'White'], ['brown', 'Brown'], ['walk1s', 'Walking 1s'], ['prbs', 'PRBS-15'], ['minmax', 'Min/Max'], ['file', 'WAV / MP3…', 'Loop an audio file (click again to load another)']] },
   { title: 'LINE FAULT', attr: 'bs-fault', opts: [['clean', 'Clean'], ['noise', 'Noise', 'Hiss on the line and the odd bit error'], ['badeq', 'Bad EQ', 'Long cable, no equaliser: dull, and the eye closes now and then'], ['jitter', 'Jitter', 'A wandering clock'], ['drop', 'Dropouts', 'The receiver loses lock and mutes'], ['slip', 'Slips', 'Unlocked clocks: a frame repeated now and then'], ['biphase', 'Bi-phase', 'Coding errors: crackle bursts'], ['noclock', 'No clock', 'No clock on the line: silence']] },
   { title: 'CHANNEL STATUS', attr: 'abb-pro', opts: [['pro', 'Professional'], ['cons', 'Consumer']] },
   { title: 'DATA', attr: 'abb-data', opts: [['audio', 'Audio'], ['data', 'Non-audio']] },
@@ -150,10 +150,10 @@ export class BitSetPanel {
       const extLock = b.ext && r.extRefLocked;
       const chB = b.bOff ? 'B off' : [b.invert && 'B Ø 180°', b.cycle && 'B cycling'].filter(Boolean).join(', ') || 'A + B';
       const lvl = b.level === null ? 'OFF' : `${b.level} dBFS`;
-      const names: Record<string, string> = { pink: 'pink noise', white: 'white noise', brown: 'brown noise', walk1s: 'walking 1s', prbs: 'PRBS-15', minmax: 'min/max' };
+      const names: Record<string, string> = { sweep: 'sweep 20 Hz–20 kHz', pink: 'pink noise', white: 'white noise', brown: 'brown noise', walk1s: 'walking 1s', prbs: 'PRBS-15', minmax: 'min/max' };
       const sig = b.pattern === 'tone' ? `${b.tone === 1000 ? '1 kHz' : '400 Hz'} @ ${lvl}`
         : b.pattern === 'file' ? `${b.fileName ?? 'file'} @ ${lvl}`
-        : ['pink', 'white', 'brown'].includes(b.pattern) ? `${names[b.pattern]} @ ${lvl}` : names[b.pattern] ?? b.pattern;
+        : ['sweep', 'pink', 'white', 'brown'].includes(b.pattern) ? `${names[b.pattern]} @ ${lvl}` : names[b.pattern] ?? b.pattern;
       const fault = b.fault && b.fault !== 'clean' ? ` · line: ${b.fault}` : '';
       st.textContent = this.loading ? this.loading : !on ? ''
         : b.ext && !extLock ? 'EXT: no AES reference, output muted. Start the POD-33 at 48 kHz to lock.'

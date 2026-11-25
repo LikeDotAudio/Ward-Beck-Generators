@@ -14,3 +14,9 @@
 .rc-bs-status { margin-top: 10px; font: 700 0.7rem ui-monospace, monospace; letter-spacing: 0.3px; opacity: 0.8; min-height: 1em; }
 .rc-bs-status.warn { color: #dc2626; opacity: 1; }
 @media (max-width: 1100px) { .rc-bs-group .rc-btn-group { flex-wrap: wrap; } }
+
+/* ABS-1 ×4 Audio Bit Spitter (8 ch): one row per AES pair, like the POD-33 outputs (bit-set8-panel.ts) */
+.rc-bs8-panel { grid-column: 1 / -1; }
+.rc-bs8-outs .rc-btn-sel { white-space: nowrap; }
+.rc-bs8-outs td { padding-right: 14px; }
+.rc-bs8-panel .rc-power-btn:disabled { opacity: 0.5; cursor: not-allowed; }

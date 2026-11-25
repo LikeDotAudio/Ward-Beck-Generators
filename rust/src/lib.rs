@@ -4,6 +4,8 @@
 //! pink noise, sweep, PRBS-15 Bit Buddy, silence). No I/O: callers own the rings.
 
 pub mod spitter;
+pub mod spitter8;
+pub mod multichannel;
 
 /// POD-33 calibrated tone: a continuous sine, one block at a time.
 pub struct Tone {

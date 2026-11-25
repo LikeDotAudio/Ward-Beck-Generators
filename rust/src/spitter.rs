@@ -8,6 +8,8 @@ use std::f64::consts::PI;
 use std::sync::Arc;
 
 const TWO_PI: f64 = 2.0 * PI;
+/// One 20 Hz → 20 kHz sweep (seconds).
+pub const SWEEP_S: f64 = 10.0;
 
 /// A looped file: interleaved stereo f32 at `rate`.
 #[derive(Clone)]
@@ -18,7 +20,7 @@ pub struct SpitterFile {
 
 #[derive(Clone)]
 pub struct SpitterParams {
-    /// tone | pink | white | brown | walk1s | prbs | minmax | file
+    /// sweep | tone | pink | white | brown | walk1s | prbs | minmax | file
     pub pattern: String,
     /// dBFS; None = OFF
     pub level: Option<f64>,
@@ -36,7 +38,7 @@ pub struct SpitterParams {
 impl Default for SpitterParams {
     fn default() -> Self {
         SpitterParams {
-            pattern: "prbs".into(), level: Some(-20.0), tone: 1000.0, cycle: false, invert: false,
+            pattern: "sweep".into(), level: Some(-20.0), tone: 1000.0, cycle: false, invert: false,
             b_off: false, muted: false, fault: "clean".into(), file: None,
         }
     }
@@ -89,6 +91,14 @@ impl SpitterSynth {
             "tone" => {
                 let v = amp * self.phase.sin();
                 self.phase = (self.phase + TWO_PI * self.p.tone / sr) % TWO_PI;
+                v
+            }
+            "sweep" => {
+                // 20 Hz → 20 kHz logarithmic, every SWEEP_S seconds
+                let t = (self.t as f64 / sr) % SWEEP_S;
+                let f = 20.0 * 1000f64.powf(t / SWEEP_S);
+                let v = amp * self.phase.sin();
+                self.phase = (self.phase + TWO_PI * f / sr) % TWO_PI;
                 v
             }
             "white" => amp * (self.rnd() * 2.0 - 1.0),
@@ -271,6 +281,18 @@ mod tests {
             let rms = (out.iter().map(|f| f.0 * f.0).sum::<f64>() / out.len() as f64).sqrt();
             assert!(rms > 0.05 && out.iter().all(|f| f.0.abs() <= 1.5), "{pat} rms {rms}");
         }
+    }
+
+    #[test]
+    fn sweep_is_the_default_and_climbs() {
+        assert_eq!(SpitterParams::default().pattern, "sweep");
+        let mut s = SpitterSynth::new(SpitterParams { level: Some(-20.0), ..Default::default() }, 48000.0);
+        // zero crossings in the first and last 100 ms of a sweep: low then high frequency
+        let mut count = |n: usize, s: &mut SpitterSynth| { let mut z = 0; let mut last = 0.0; for _ in 0..n { let (l, _) = s.next(); if (l >= 0.0) != (last >= 0.0) { z += 1; } last = l; } z };
+        let lo = count(4800, &mut s);
+        for _ in 0..(48000 * 9 + 38400) { s.next(); }
+        let hi = count(4800, &mut s);
+        assert!(lo < 20 && hi > 1000, "lo {lo} hi {hi}");
     }
 
     #[test]

@@ -3,7 +3,7 @@
  * Generators view (footer tab "generators").
  * POD-33 AES DARS & precision tone generator, the CBC / Radio-Canada MXL
  * test pattern studio (shown in the host's MXL tab when a cbcHost is given), and the ABS-1 Audio Bit Spitter
- * (see bit-set-panel.ts).
+ * (see bit-set-panel.ts), then the 8-channel ABS-1 ×4 (bit-set8-panel.ts, TAP only).
  *
  * POD-33 and ABS-1 state lives in the Web Router (its CH 3 / CH 4 inputs
  * engage them), so these panels read and write it through the router.
@@ -11,6 +11,7 @@
 
 import type { GeneratorRouter } from '../host';
 import { BitSetPanel } from './bit-set-panel';
+import { BitSet8Panel } from './bit-set8-panel';
 
 const DAEMON = 'http://localhost:8467';
 
@@ -35,6 +36,7 @@ interface CbcStatus {
 export class GeneratorsView {
   private unsubscribe?: () => void;
   private bitSet: BitSetPanel;
+  private bitSet8 = new BitSet8Panel();
   private cbc: CbcStatus = {};
   private cbcTimer = 0;
   private cbcBusy = false;
@@ -56,6 +58,7 @@ export class GeneratorsView {
     }
     this.attachEvents();
     this.bitSet.bind(this.container);
+    this.bitSet8.bind(this.container);
     this.startCbcPolling();
     this.unsubscribe?.();
     this.unsubscribe = this.router.onChange(() => this.refresh());
@@ -166,6 +169,7 @@ export class GeneratorsView {
           </div>
         </div>
 ${this.bitSet.html()}
+${this.bitSet8.html()}
         </div>
       </div>
     `;
@@ -329,5 +333,6 @@ ${this.bitSet.html()}
     root.querySelectorAll('[data-pod-ref] .rc-led-dot').forEach((dot) =>
       dot.classList.toggle('lit-green', dot.parentElement?.getAttribute('data-pod-ref') === pc.refClock));
     this.bitSet.paint(root);
+    this.bitSet8.paint(root);
   }
 }
