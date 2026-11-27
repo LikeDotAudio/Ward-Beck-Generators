@@ -8,4 +8,4 @@ export type { Pod33Config, BitBuddyConfig } from './sources/pod33-generator';
 export { DEFAULT_POD33_CONFIG, DEFAULT_BITBUDDY_CONFIG } from './sources/pod33-generator';
 export { GeneratorsView } from './views/generators-view';
 export { BitSetPanel } from './views/bit-set-panel';
-export { BitSet8Panel } from './views/bit-set8-panel';
+export { BitSpitterSetPanel, SPITTER_SIZES } from './views/bit-spitter-set-panel';

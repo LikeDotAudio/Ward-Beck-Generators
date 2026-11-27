@@ -7,6 +7,7 @@ Ward-Beck Audio Tap daemon.
 |---|---|---|
 | POD-33 precision tone (100 Hz / 400 Hz / 1 kHz, 0 VU = -18 dBFS) | `sources/pod33-generator.ts` | `Tone` |
 | ABB-1 Bit Buddy / ABP-1 Bit Spitter (walking 1s, PRBS-15, polarity) | `sources/pod33-generator.ts`, `views/bit-set-panel.ts` | `WalkingOnes`, `bitbuddy` grain |
+| ABS-1 Bit Spitter set: 1, 2, 4, 8, 16-channel flows, a source / level / tone / channel B / line fault per AES pair (the TAP plays them, each on its own AES67 transmitter, flow GOOD / BAD / UGLY) | `views/bit-spitter-set-panel.ts`, `sources/spitter8-synth.ts` | `spitter8::SpitterBank` (`SIZES`) |
 | Test tones: sine, pink noise, 20 Hz–20 kHz sweep | `sources/test-generator.ts`, `dsp/` | `synthesize_test_signal_buffer` |
 | Generators tab (front panels) | `views/generators-view.ts`, `generators-bitset.css` | — |
 

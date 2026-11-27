@@ -3,7 +3,7 @@
  * Generators view (footer tab "generators").
  * POD-33 AES DARS & precision tone generator, the CBC / Radio-Canada MXL
  * test pattern studio (shown in the host's MXL tab when a cbcHost is given), and the ABS-1 Audio Bit Spitter
- * (see bit-set-panel.ts), then the 8-channel ABS-1 ×4 (bit-set8-panel.ts, TAP only).
+ * (see bit-set-panel.ts), then the Bit Spitter set: its 1, 2, 4, 8 and 16-channel flows and their AES67 transmitters (bit-spitter-set-panel.ts, TAP only).
  *
  * POD-33 and ABS-1 state lives in the Web Router (its CH 3 / CH 4 inputs
  * engage them), so these panels read and write it through the router.
@@ -11,7 +11,7 @@
 
 import type { GeneratorRouter } from '../host';
 import { BitSetPanel } from './bit-set-panel';
-import { BitSet8Panel } from './bit-set8-panel';
+import { BitSpitterSetPanel } from './bit-spitter-set-panel';
 
 const DAEMON = 'http://localhost:8467';
 
@@ -36,7 +36,7 @@ interface CbcStatus {
 export class GeneratorsView {
   private unsubscribe?: () => void;
   private bitSet: BitSetPanel;
-  private bitSet8 = new BitSet8Panel();
+  private bitSet8 = new BitSpitterSetPanel();
   private cbc: CbcStatus = {};
   private cbcTimer = 0;
   private cbcBusy = false;
